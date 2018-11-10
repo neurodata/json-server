@@ -24,7 +24,9 @@ def get_data(event):
     item = res.get("Item")
     if not item:
         return respond(KeyError('No key given'))
-    return respond(None, item)
+    data = item.get('data')
+    print(data)
+    return respond(None, data)
 
 
 def post_data(event):
