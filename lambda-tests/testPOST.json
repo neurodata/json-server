@@ -1,6 +1,6 @@
 {
     "httpMethod": "POST",
-    "payload": {
+    "body": {
         "jsonStateServer": "https://api.myjson.com/bins",
         "layout": "4panel"
     }

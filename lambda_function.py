@@ -1,4 +1,3 @@
-
 import boto3
 import json
 import base64
@@ -21,16 +20,23 @@ def respond(err, res=None):
 def get_data(event):
     x = event['queryStringParameters']
     res = dynamo.get_item(Key=x)
+    if res["ResponseMetadata"]["HTTPStatusCode"] == 200:
+        msg = 'GET success'
+    else:
+        msg = 'GET failure'
+    print(msg)
     item = res.get("Item")
     if not item:
+        print('Item not found')
         return respond(KeyError('No key given'))
     data = item.get('data')
-    print(data)
+    print('data:', data)
     return respond(None, data)
 
 
 def post_data(event):
-    payload = json.dumps(event.get('payload'))
+    # payload as string
+    payload = json.dumps(event.get('body'))
 
     # hash the payload
     payload_hash = hashlib.sha1(payload.encode())
@@ -50,14 +56,14 @@ def post_data(event):
     res = dynamo.put_item(Item=data)
 
     if res["ResponseMetadata"]["HTTPStatusCode"] == 200:
-        msg = "Success"
+        msg = "Post success"
     else:
-        msg = "Failure"
+        msg = "Post failure"
     print(msg)
     print(json.dumps(res, indent=2))
 
     # return the ID
-    return respond(None, NGStateID)
+    return respond(None, {'NGStateID': NGStateID})
 
 
 def lambda_handler(event, context):
