@@ -7,31 +7,29 @@ print('Loading function')
 dynamo = boto3.resource('dynamodb').Table('NGStates')
 
 
-def respond(err, res=None):
+def response(message, status_code):
+    print('Message:', message)
+    print('Status code:', status_code)
     return {
-        'statusCode': '400' if err else '200',
-        'body': str(err) if err else json.dumps(res),
+        'statusCode': status_code,
+        'body': json.dumps(message),
         'headers': {
             'Content-Type': 'application/json',
         },
+        'isBase64Encoded': False
     }
 
 
 def get_data(event):
     x = event['queryStringParameters']
     res = dynamo.get_item(Key=x)
-    if res["ResponseMetadata"]["HTTPStatusCode"] == 200:
-        msg = 'GET success'
-    else:
-        msg = 'GET failure'
-    print(msg)
     item = res.get("Item")
     if not item:
-        print('Item not found')
-        return respond(KeyError('No key given'))
+        msg = 'Item not found in DynamoDB'
+        print(msg)
+        return response(msg, 400)
     data = item.get('data')
-    print('data:', data)
-    return respond(None, data)
+    return response(data, 200)
 
 
 def post_data(event):
@@ -55,15 +53,14 @@ def post_data(event):
     }
     res = dynamo.put_item(Item=data)
 
-    if res["ResponseMetadata"]["HTTPStatusCode"] == 200:
-        msg = "Post success"
-    else:
-        msg = "Post failure"
-    print(msg)
-    print(json.dumps(res, indent=2))
+    if res["ResponseMetadata"]["HTTPStatusCode"] != 200:
+        msg = "Post failure - database returned error code {}". format(
+            res["ResponseMetadata"]["HTTPStatusCode"])
+        print(msg)
+        return response(msg, 500)
 
     # return the ID
-    return respond(None, {'NGStateID': NGStateID})
+    return response({'NGStateID': NGStateID}, 201)
 
 
 def lambda_handler(event, context):
@@ -85,4 +82,4 @@ def lambda_handler(event, context):
     elif operation == 'POST':
         post_data(event)
     else:
-        return respond(ValueError('Unsupported method "{}"'.format(operation)))
+        return response('Unsupported method "{}"'.format(operation), 400)

@@ -1,7 +1,7 @@
 import requests
 import json
 
-base_url = 'https://json.neurodata.io/bins/default/NGState-microservice'
+base_url = 'https://json.neurodata.io/v1'
 
 # test a simple GET request
 
@@ -14,6 +14,5 @@ print(r.json())
 with open('large_state.json', 'r') as jsonfile:
     payload = json.load(jsonfile)
 
-url = 'https://json.neurodata.io/bins/default/NGState-microservice'
 r = requests.post(url, json=payload)
 print(r.json())
