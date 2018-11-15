@@ -6,13 +6,15 @@ import hashlib
 print('Loading function')
 dynamo = boto3.resource('dynamodb').Table('NGStates')
 
+URL = 'https://json.neurodata.io/v1'
+
 
 def response(message, status_code):
-    print('Message:', message)
-    print('Status code:', status_code)
+    # print('Message:', message)
+    # print('Status code:', status_code)
     return {
         'statusCode': status_code,
-        'body': json.dumps(message),
+        'body': message,
         'headers': {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'
@@ -27,10 +29,10 @@ def get_data(event):
     item = res.get("Item")
     if not item:
         msg = 'Item not found in DynamoDB'
-        print(msg)
+        # print(msg)
         return response(msg, 400)
     data = item.get('data')
-    return response(data, 200)
+    return response(json.loads(data), 200)
 
 
 def post_data(event):
@@ -57,11 +59,11 @@ def post_data(event):
     if res["ResponseMetadata"]["HTTPStatusCode"] != 200:
         msg = "Post failure - database returned error code {}". format(
             res["ResponseMetadata"]["HTTPStatusCode"])
-        print(msg)
+        # print(msg)
         return response(msg, 500)
 
     # return the ID
-    return response({'NGStateID': NGStateID}, 201)
+    return response(json.dumps({'uri': '{}?NGStateID={}'.format(URL, NGStateID)}), 201)
 
 
 def lambda_handler(event, context):
@@ -74,13 +76,13 @@ def lambda_handler(event, context):
     PUT, or DELETE request respectively, passing in the payload to the
     DynamoDB API as a JSON body.
     '''
-    print("Received event: " + json.dumps(event, indent=2))
+    # print("Received event: " + json.dumps(event, indent=2))
 
     operation = event['httpMethod']
 
     if operation == 'GET':
-        get_data(event)
+        return get_data(event)
     elif operation == 'POST':
-        post_data(event)
+        return post_data(event)
     else:
         return response('Unsupported method "{}"'.format(operation), 400)
