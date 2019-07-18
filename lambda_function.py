@@ -63,7 +63,10 @@ def post_data(event):
         return response(msg, 500)
 
     # return the ID
-    return response(json.dumps({'uri': '{}?NGStateID={}'.format(URL, NGStateID)}), 201)
+    if event['path'] == "/v1":
+        return response(json.dumps({'uri': '{}?NGStateID={}'.format(URL, NGStateID)}), 201)
+    else:
+        return response('{}?NGStateID={}'.format(URL, NGStateID), 201)
 
 
 def lambda_handler(event, context):
