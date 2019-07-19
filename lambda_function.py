@@ -3,74 +3,73 @@ import json
 import base64
 import hashlib
 
-print('Loading function')
-dynamo = boto3.resource('dynamodb').Table('NGStates')
+print("Loading function")
+dynamo = boto3.resource("dynamodb").Table("NGStates")
 
-URL = 'https://json.neurodata.io/v1'
+URL = "https://json.neurodata.io/v1"
 
 
 def response(message, status_code):
     # print('Message:', message)
     # print('Status code:', status_code)
     return {
-        'statusCode': status_code,
-        'body': message,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
+        "statusCode": status_code,
+        "body": message,
+        "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
         },
-        'isBase64Encoded': False
+        "isBase64Encoded": False,
     }
 
 
 def get_data(event):
-    x = event['queryStringParameters']
+    x = event["queryStringParameters"]
     res = dynamo.get_item(Key=x)
     item = res.get("Item")
     if not item:
-        msg = 'Item not found in DynamoDB'
+        msg = "Item not found in DynamoDB"
         # print(msg)
         return response(msg, 400)
-    data = item.get('data')
+    data = item.get("data")
     return response(json.loads(data), 200)
 
 
 def post_data(event):
     # payload as string
-    payload = json.dumps(event.get('body'))
+    payload = json.dumps(event.get("body"))
 
     # hash the payload
     payload_hash = hashlib.sha1(payload.encode())
 
     # create a base64 version of the hash (& take the first 10 values)
     # Bytes object
-    NGStateID_base64 = base64.urlsafe_b64encode(
-        payload_hash.digest()[:10])
+    NGStateID_base64 = base64.urlsafe_b64encode(payload_hash.digest()[:10])
     # String
-    NGStateID = NGStateID_base64.decode('utf-8').rstrip('=')
+    NGStateID = NGStateID_base64.decode("utf-8").rstrip("=")
 
     # must include NGStateID
-    data = {
-        'NGStateID': NGStateID,
-        'data': payload
-    }
+    data = {"NGStateID": NGStateID, "data": payload}
     res = dynamo.put_item(Item=data)
 
     if res["ResponseMetadata"]["HTTPStatusCode"] != 200:
-        msg = "Post failure - database returned error code {}". format(
-            res["ResponseMetadata"]["HTTPStatusCode"])
+        msg = "Post failure - database returned error code {}".format(
+            res["ResponseMetadata"]["HTTPStatusCode"]
+        )
         # print(msg)
         return response(msg, 500)
 
     # return the ID
-    if event['path'] == "/v1":
-        return response(json.dumps({'uri': '{}?NGStateID={}'.format(URL, NGStateID)}), 201)
+    if event["path"] == "/v1":
+        return response(
+            json.dumps({"uri": "{}?NGStateID={}".format(URL, NGStateID)}), 201
+        )
     else:
-        return response('{}?NGStateID={}'.format(URL, NGStateID), 201)
+        return response("{}?NGStateID={}".format(URL, NGStateID), 201)
 
 
 def lambda_handler(event, context):
-    '''Demonstrates a simple HTTP endpoint using API Gateway. You have full
+    """Demonstrates a simple HTTP endpoint using API Gateway. You have full
     access to the request and response payload, including headers and
     status code.
 
@@ -78,14 +77,14 @@ def lambda_handler(event, context):
     query string parameter. To put, update, or delete an item, make a POST,
     PUT, or DELETE request respectively, passing in the payload to the
     DynamoDB API as a JSON body.
-    '''
+    """
     # print("Received event: " + json.dumps(event, indent=2))
 
-    operation = event['httpMethod']
+    operation = event["httpMethod"]
 
-    if operation == 'GET':
+    if operation == "GET":
         return get_data(event)
-    elif operation == 'POST':
+    elif operation == "POST":
         return post_data(event)
     else:
         return response('Unsupported method "{}"'.format(operation), 400)
