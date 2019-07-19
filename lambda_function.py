@@ -65,7 +65,7 @@ def post_data(event):
             json.dumps({"uri": "{}?NGStateID={}".format(URL, NGStateID)}), 201
         )
     else:
-        return response("{}?NGStateID={}".format(URL, NGStateID), 201)
+        return response(json.dumps("{}?NGStateID={}".format(URL, NGStateID)), 201)
 
 
 def lambda_handler(event, context):

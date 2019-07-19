@@ -30,7 +30,7 @@ def test_post_post():
     r = requests.post(f"{BASE_URL}/{stage}", json=simple_dict)
     assert r.status_code == 201
 
-    return_id = r.text.split("?")[1]
+    return_id = r.json().split("?")[1]
 
     # test GET request (ID should exist in DB)
     url = f"{BASE_URL}/{stage}?{return_id}"
