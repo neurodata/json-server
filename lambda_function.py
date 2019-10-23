@@ -1,7 +1,10 @@
-import boto3
-import json
 import base64
+import gzip
 import hashlib
+import json
+
+import boto3
+from boto3.dynamodb import types
 
 print("Loading function")
 dynamo = boto3.resource("dynamodb").Table("NGStates")
@@ -32,7 +35,15 @@ def get_data(event):
         # print(msg)
         return response(msg, 400)
     data = item.get("data")
-    return response(json.loads(data), 200)
+
+    # backwards compatibility (data stored directly as JSON string)
+    if type(data) == str:
+        return response(json.loads(data), 200)
+    # all data going forward is gzip compressed in dynamo to get around 400K limit
+    elif type(data) == types.Binary:
+        return response(json.loads(gzip.decompress(data.value)), 200)
+    else:
+        return response("type unsupported", 502)
 
 
 def post_data(event):
@@ -49,7 +60,7 @@ def post_data(event):
     NGStateID = NGStateID_base64.decode("utf-8").rstrip("=")
 
     # must include NGStateID
-    data = {"NGStateID": NGStateID, "data": payload}
+    data = {"NGStateID": NGStateID, "data": gzip.compress(bytes(payload, "utf-8"))}
     res = dynamo.put_item(Item=data)
 
     if res["ResponseMetadata"]["HTTPStatusCode"] != 200:
